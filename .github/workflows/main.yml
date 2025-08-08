@@ -1,0 +1,38 @@
+name: Terraform + Ansible Ubuntu Hardening
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-and-harden:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init & Apply
+      working-directory: ./terraform
+      run: |
+        terraform init
+        terraform apply -auto-approve
+
+    - name: Install Ansible
+      run: |
+        sudo apt update
+        sudo apt install -y ansible
+
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        terraform output -raw instance_ip > ip.txt
+        ssh-keyscan -H $(cat ip.txt) >> ~/.ssh/known_hosts
+
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook -i $(cat ip.txt),                          --user=ubuntu                          --private-key=~/.ssh/id_rsa                          ansible/hardening.yml

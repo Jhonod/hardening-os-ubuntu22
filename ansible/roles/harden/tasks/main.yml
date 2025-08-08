@@ -1,0 +1,26 @@
+- name: Update & upgrade packages
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Set MOTD banner
+  copy:
+    src: issue_banner
+    dest: /etc/issue
+
+- name: Disable root SSH login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+
+- name: Disable password authentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+
+- name: Restart SSH
+  service:
+    name: ssh
+    state: restarted
